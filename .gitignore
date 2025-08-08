@@ -1,0 +1,5 @@
+__pycache__/
+*.pyc
+*.log
+subscribers.txt
+last_tweet.txt
