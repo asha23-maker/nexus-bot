@@ -18,7 +18,7 @@ if not TOKEN:
 
 SUBSCRIBERS_FILE = "subscribers.txt"
 LAST_TWEET_FILE = "last_tweet.txt"
-NITTER_RSS = "https://nitter.net/NexusLabs/rss"
+NITTER_RSS = "https://nitter.net/NexusLabs/rss"  # RSS-лента
 
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
@@ -87,6 +87,7 @@ def set_last_tweet_link(link: str) -> None:
 
 # ---------- handlers ----------
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Отправляет главное меню (работает и по /start, и при возврате в меню)."""
     if update.message:
         await update.message.reply_text(
             WELCOME_TEXT, reply_markup=main_menu_markup(), parse_mode="Markdown"
@@ -140,6 +141,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         return
 
+    # Любая другая вкладка из NEXUS_DATA
     content = NEXUS_DATA.get(data)
     if content:
         await query.edit_message_text(
@@ -153,7 +155,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             WELCOME_TEXT, reply_markup=main_menu_markup(), parse_mode="Markdown"
         )
 
-# ---------- JobQueue ----------
+# ---------- JobQueue: проверка твитов ----------
 async def check_twitter_updates(context: ContextTypes.DEFAULT_TYPE):
     try:
         feed = feedparser.parse(NITTER_RSS)
@@ -161,14 +163,20 @@ async def check_twitter_updates(context: ContextTypes.DEFAULT_TYPE):
             return
         latest = feed.entries[0]
         new_link = latest.link.strip()
+        tweet_text = latest.title.strip() if hasattr(latest, "title") else ""
+        short_text = (tweet_text[:150] + "...") if len(tweet_text) > 150 else tweet_text
         last = get_last_tweet_link()
 
         if new_link and new_link != last:
             set_last_tweet_link(new_link)
-            text = f"🆕 *New post on Nexus Twitter*\n\nCheck this out – {new_link}"
+            text = (
+                f"🆕 *New post on Nexus Twitter*\n\n"
+                f"📢 {short_text}\n\n"
+                f"🔗 [Read more]({new_link})"
+            )
             for uid in load_subscribers():
                 try:
-                    await context.bot.send_message(chat_id=uid, text=text, parse_mode="Markdown")
+                    await context.bot.send_message(chat_id=uid, text=text, parse_mode="Markdown", disable_web_page_preview=False)
                 except Exception as e:
                     logger.warning(f"Failed to send to {uid}: {e}")
     except Exception as e:
@@ -178,6 +186,8 @@ def main():
     app = ApplicationBuilder().token(TOKEN).build()
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CallbackQueryHandler(handle_callback))
+
+    # Каждые 3 минуты проверяем RSS
     app.job_queue.run_repeating(check_twitter_updates, interval=180, first=10)
 
     print("✅ Nexus Bot is running...")
@@ -185,4 +195,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
