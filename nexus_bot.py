@@ -154,31 +154,21 @@ async def check_twitter_updates(context: ContextTypes.DEFAULT_TYPE):
     except Exception as e:
         logger.error(f"check_twitter_updates error: {e}")
 
-# --- Тест отправки твита ---
-async def send_test_tweet(context: ContextTypes.DEFAULT_TYPE):
-    text = "🆕 *New Nexus Twitter Post!*\n\nThis is a TEST message.\nhttps://nexus.org/test-post"
-    for uid in load_subscribers():
-        try:
-            await context.bot.send_message(chat_id=uid, text=text, parse_mode="Markdown")
-            logger.info(f"✅ Test tweet sent to {uid}")
-        except Exception as e:
-            logger.warning(f"Failed to send test tweet to {uid}: {e}")
-    logger.info("Test tweet dispatch completed.")
-
 # --- Запуск бота ---
 def main():
     logger.info("Starting Nexus Bot...")
-    app = ApplicationBuilder().token(TOKEN).build()
 
+    # Проверка файла с подписчиками при старте
+    if os.path.exists(SUBSCRIBERS_FILE):
+        with open(SUBSCRIBERS_FILE, "r", encoding="utf-8") as f:
+            logger.info(f"Subscribers file content:\n{f.read()}")
+    else:
+        logger.info("Subscribers file not found.")
+
+    app = ApplicationBuilder().token(TOKEN).build()
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CallbackQueryHandler(handle_callback))
-
-    # Проверка твитов каждые 3 минуты
     app.job_queue.run_repeating(check_twitter_updates, interval=180, first=10)
-
-    # Тестовое сообщение через 5 секунд после старта
-    app.job_queue.run_once(send_test_tweet, when=5)
-
     app.run_polling(allowed_updates=Update.ALL_TYPES)
 
 if __name__ == "__main__":
