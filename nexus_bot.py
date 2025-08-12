@@ -63,7 +63,6 @@ def save_subscriber(user_id):
     if user_id not in subs:
         with open(SUBSCRIBERS_FILE, "a", encoding="utf-8") as f:
             f.write(user_id + "\n")
-        logger.info(f"New subscriber added: {user_id}")
 
 def remove_subscriber(user_id):
     subs = set(load_subscribers())
@@ -72,7 +71,6 @@ def remove_subscriber(user_id):
         with open(SUBSCRIBERS_FILE, "w", encoding="utf-8") as f:
             for s in subs:
                 f.write(s + "\n")
-        logger.info(f"Subscriber removed: {user_id}")
 
 # --- Храним последний твит ---
 def get_last_tweet_link():
@@ -147,7 +145,6 @@ async def check_twitter_updates(context: ContextTypes.DEFAULT_TYPE):
         if new_link and new_link != last:
             set_last_tweet_link(new_link)
             text = f"🆕 *New Nexus Twitter Post!*\n\n{latest.title}\n{new_link}"
-            logger.info(f"New tweet detected: {new_link}")
             for uid in load_subscribers():
                 try:
                     await context.bot.send_message(chat_id=uid, text=text, parse_mode="Markdown")
@@ -167,9 +164,14 @@ def main():
         logger.info("Subscribers file not found.")
 
     app = ApplicationBuilder().token(TOKEN).build()
+
+    # теперь job_queue точно будет
+    job_queue = app.job_queue
+    job_queue.run_repeating(check_twitter_updates, interval=180, first=10)
+
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CallbackQueryHandler(handle_callback))
-    app.job_queue.run_repeating(check_twitter_updates, interval=180, first=10)
+
     app.run_polling(allowed_updates=Update.ALL_TYPES)
 
 if __name__ == "__main__":
