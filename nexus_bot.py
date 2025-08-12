@@ -27,10 +27,10 @@ BOT_TOKEN = os.getenv("BOT_TOKEN")
 if not BOT_TOKEN:
     raise ValueError("BOT_TOKEN is not set! Add it in Railway → Variables.")
 
-# Твой Telegram ID (можно также передать через переменную окружения ADMIN_ID)
+# Можно указать админа через переменную окружения ADMIN_ID, иначе берём дефолт.
 ADMIN_ID = int(os.getenv("ADMIN_ID", "817635625"))
 
-USERS_FILE = "users.json"   # здесь будем хранить chat_id всех, кто когда-либо писал боту
+USERS_FILE = "users.json"   # здесь храним chat_id всех, кто писал боту
 
 WELCOME_TEXT = (
     "🌐 *Welcome to Nexus Navigator Bot!*\n\n"
@@ -88,13 +88,11 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_chat.id
     remember_user(chat_id)
 
-    # /start приходит как message
-    if update.message:
+    if update.message:  # обычный /start
         await update.message.reply_text(
             WELCOME_TEXT, reply_markup=main_menu_markup(), parse_mode="Markdown"
         )
-    # на всякий случай обработаем и callback-сценарий
-    elif update.callback_query:
+    elif update.callback_query:  # на всякий случай
         await update.callback_query.edit_message_text(
             WELCOME_TEXT, reply_markup=main_menu_markup(), parse_mode="Markdown"
         )
@@ -121,7 +119,6 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             reply_markup=back_menu_markup(),
         )
     else:
-        # если пришел неизвестный ключ — вернемся в меню
         await query.edit_message_text(
             WELCOME_TEXT, reply_markup=main_menu_markup(), parse_mode="Markdown"
         )
@@ -131,16 +128,25 @@ async def register_any_message(update: Update, context: ContextTypes.DEFAULT_TYP
     remember_user(update.effective_chat.id)
 
 async def broadcast(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Рассылка всем пользователям (только для ADMIN_ID). Использование: /broadcast текст..."""
+    """Рассылка всем пользователям (только для ADMIN_ID).
+       Поддерживает многострочный текст: всё, что после '/broadcast' — идёт как сообщение.
+    """
     if update.effective_user.id != ADMIN_ID:
         await update.message.reply_text("❌ You are not allowed to use this command.")
         return
 
-    if not context.args:
-        await update.message.reply_text("Usage: /broadcast <your message>")
+    # Берём ВСЁ сообщение, убираем саму команду '/broadcast'
+    full_text = update.message.text or ""
+    msg = full_text[len("/broadcast"):].strip()
+
+    if not msg:
+        await update.message.reply_text(
+            "Usage:\n/broadcast <your message>\n\n"
+            "Можно с переносами строк. Пример:\n"
+            "/broadcast Привет!\nСегодня апдейт:\n- Пункт 1\n- Пункт 2"
+        )
         return
 
-    msg = " ".join(context.args)
     users = load_users()
     sent = 0
 
@@ -164,11 +170,11 @@ def main():
     # Инлайн-кнопки
     app.add_handler(CallbackQueryHandler(handle_callback))
 
-    # Любое сообщение — просто регистрируем пользователя
+    # Любое НЕ-командное сообщение → регистрируем пользователя
     app.add_handler(MessageHandler(filters.ALL & ~filters.COMMAND, register_any_message))
 
     logger.info("Nexus Bot started…")
-    app.run_polling(allowed_updates=Update.ALL_TYPES)
+    app.run_polling()
 
 if __name__ == "__main__":
     main()

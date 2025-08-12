@@ -128,7 +128,6 @@ Faucet       https://faucets.alchemy.com/faucets/nexus-testnet
     "disclaimer": """⚠️ *Disclaimer*
 
 This is not an official TG Nexus bot — it’s built by the community.  
-
 Creator: https://x.com/forotney?s=21
 """,
 }
