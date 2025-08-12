@@ -1,4 +1,3 @@
-# nexus_bot.py
 import os
 import logging
 import feedparser
@@ -64,6 +63,7 @@ def save_subscriber(user_id):
     if user_id not in subs:
         with open(SUBSCRIBERS_FILE, "a", encoding="utf-8") as f:
             f.write(user_id + "\n")
+        logger.info(f"New subscriber added: {user_id}")
 
 def remove_subscriber(user_id):
     subs = set(load_subscribers())
@@ -72,6 +72,7 @@ def remove_subscriber(user_id):
         with open(SUBSCRIBERS_FILE, "w", encoding="utf-8") as f:
             for s in subs:
                 f.write(s + "\n")
+        logger.info(f"Subscriber removed: {user_id}")
 
 # --- Храним последний твит ---
 def get_last_tweet_link():
@@ -146,6 +147,7 @@ async def check_twitter_updates(context: ContextTypes.DEFAULT_TYPE):
         if new_link and new_link != last:
             set_last_tweet_link(new_link)
             text = f"🆕 *New Nexus Twitter Post!*\n\n{latest.title}\n{new_link}"
+            logger.info(f"New tweet detected: {new_link}")
             for uid in load_subscribers():
                 try:
                     await context.bot.send_message(chat_id=uid, text=text, parse_mode="Markdown")
@@ -158,7 +160,6 @@ async def check_twitter_updates(context: ContextTypes.DEFAULT_TYPE):
 def main():
     logger.info("Starting Nexus Bot...")
 
-    # Проверка файла с подписчиками при старте
     if os.path.exists(SUBSCRIBERS_FILE):
         with open(SUBSCRIBERS_FILE, "r", encoding="utf-8") as f:
             logger.info(f"Subscribers file content:\n{f.read()}")
