@@ -119,7 +119,6 @@ Faucet       https://faucets.alchemy.com/faucets/nexus-testnet
 • 📄 Whitepaper: https://whitepaper.nexus.xyz  
 • 📚 Docs: https://docs.nexus.xyz  
 • 📝 Blog: https://blog.nexus.xyz  
-• 🐦 X (Twitter): https://x.com/NexusLabs  
 • 👤 Daniel Marin: https://x.com/danielmarinq  
 • 📸 Instagram: https://instagram.com/nexus.laboratories  
 • 💬 Discord: https://discord.gg/nexus-xyz  
@@ -129,13 +128,7 @@ Faucet       https://faucets.alchemy.com/faucets/nexus-testnet
     "disclaimer": """⚠️ *Disclaimer*
 
 This is not an official TG Nexus bot — it’s built by the community.  
+
 Creator: https://x.com/forotney?s=21
-""",
-
-    "subscribe": """📣 *Subscribe to Post Alerts*
-
-Would you like to receive notifications when a new post appears on @NexusLabs Twitter?
-
-Use the buttons below:
 """,
 }
